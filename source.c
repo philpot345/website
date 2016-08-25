@@ -5,6 +5,7 @@
 
 int main() {
 	HINTERNET connect = InternetOpen("MyBrowser", INTERNET_OPEN_TYPE_PRECONFIG, NULL, NULL, 0);
+	char* website_address = "";
 
 	if (!connect) {
 		printf("Connection Failed or Syntax error");
@@ -12,7 +13,7 @@ int main() {
 		return 0;
 	}
 
-	HINTERNET OpenAddress = InternetOpenUrl(connect, "v01lvl03", NULL, 0, INTERNET_FLAG_PRAGMA_NOCACHE | INTERNET_FLAG_KEEP_CONNECTION, 0);
+	HINTERNET OpenAddress = InternetOpenUrl(connect, website_address, NULL, 0, INTERNET_FLAG_PRAGMA_NOCACHE | INTERNET_FLAG_KEEP_CONNECTION, 0);
 
 	if (!OpenAddress)
 	{
