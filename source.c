@@ -3,19 +3,62 @@
 #include <windows.h>
 #include <wininet.h>
 
+int uClose_Internet_Connections(HINTERNET, HINTERNET, HINTERNET);
+int uConnect_to_Internet(HINTERNET, LPCWSTR, DWORD, DWORD);
+int uConnect_to_Server(HINTERNET, HINTERNET, LPCWSTR, DWORD, DWORD);
+int uConnect_to_URL(HINTERNET, HINTERNET, HINTERNET, LPCWSTR, DWORD);
+int uRead_Data_from_Website(HINTERNET, char[4096], int, DWORD);
+
 int main() {
+
+	//	Setup all Variables to be used
+
 	char DataReceived[4096];
+
+	int DataSize = 4096;
 
 	DWORD dwAddressRequestFlags = INTERNET_FLAG_KEEP_CONNECTION;// | INTERNET_FLAG_PRAGMA_NOCACHE;
 	DWORD dwConnectionAccessRequest = INTERNET_OPEN_TYPE_PRECONFIG;
 	DWORD dwConnectionFlags = 0;//INTERNET_FLAG_ASYNC;
+	DWORD dwDefaultPort = INTERNET_DEFAULT_HTTP_PORT;
+	DWORD dwInternetService = INTERNET_SERVICE_HTTP;
 	DWORD dwNumberofBytesRead = 0;
 
-	LPWSTR website_address = TEXT("");
+	LPCWSTR application_title = TEXT("MyBrowser");
+	LPCWSTR website_address = TEXT("");
 
 	HINTERNET hConnect = NULL, hInternetConnect = NULL, hOpenAddress = NULL;
 
-	hConnect = InternetOpen("MyBrowser", dwConnectionAccessRequest, NULL, NULL, dwConnectionFlags);
+	//	Open a connection to the internet
+	hConnect = uConnect_to_Internet(hConnect, application_title, dwConnectionAccessRequest, dwConnectionFlags);
+
+	//	Open a connection to the server / address
+	hInternetConnect = uConnect_to_Server(hConnect, hInternetConnect, website_address, dwDefaultPort, dwInternetService);
+
+	//	Connect to the URL
+	hOpenAddress = uConnect_to_URL(hConnect, hInternetConnect, hOpenAddress, website_address, dwAddressRequestFlags);
+
+	//	Perform the actions
+	uRead_Data_from_Website(hOpenAddress, DataReceived, DataSize, dwNumberofBytesRead);
+
+	//	Close all internet connections
+	uClose_Internet_Connections(hConnect, hInternetConnect, hOpenAddress);
+
+	system("pause");
+	return 0;
+}
+
+int uClose_Internet_Connections(hConnect, hInternetConnect, hOpenAddress)
+{
+	InternetCloseHandle(hOpenAddress);
+	InternetCloseHandle(hInternetConnect);
+	InternetCloseHandle(hConnect);
+	return 0;
+}
+
+int uConnect_to_Internet(hConnect, application_title, dwConnectionAccessRequest, dwConnectionFlags)
+{
+	hConnect = InternetOpen(application_title, dwConnectionAccessRequest, NULL, NULL, dwConnectionFlags);
 
 	if (!hConnect) {
 		printf("Failed to make base connection\n");
@@ -26,7 +69,12 @@ int main() {
 	else
 		printf("Server Connection Successful:\t0x%x\n", hConnect);
 
-	hInternetConnect = InternetConnect(hConnect, website_address, INTERNET_DEFAULT_HTTP_PORT, NULL, NULL, INTERNET_SERVICE_HTTP, 0, 0);
+	return hConnect;
+}
+
+int uConnect_to_Server(hConnect, hInternetConnect, website_address, dwDefaultPort, dwInternetService)
+{
+	hInternetConnect = InternetConnect(hConnect, website_address, dwDefaultPort, NULL, NULL, dwInternetService, 0, 0);
 
 	if (!hInternetConnect)
 	{
@@ -42,6 +90,11 @@ int main() {
 	else
 		printf("Internet Connection Successful:\t0x%x\n", hInternetConnect);
 
+	return hInternetConnect;
+}
+
+int uConnect_to_URL(hConnect, hInternetConnect, hOpenAddress, website_address, dwAddressRequestFlags)
+{
 	hOpenAddress = InternetOpenUrl(hConnect, website_address, NULL, NULL, dwAddressRequestFlags, NULL);
 
 	if (!hOpenAddress)
@@ -58,17 +111,15 @@ int main() {
 
 	else
 		printf("Connection to URL Successful:\t0x%x\n", hOpenAddress);
-	/*
-	dwNumberofBytesRead = 0;
+
+	return hOpenAddress;
+}
+
+int uRead_Data_from_Website(hOpenAddress, DataReceived, DataSize, dwNumberofBytesRead)
+{
 	while (InternetReadFile(hOpenAddress, DataReceived, 4096, &dwNumberofBytesRead) && dwNumberofBytesRead)
 	{
 		printf(DataReceived);
 	}
-
-	InternetCloseHandle(hOpenAddress);
-	InternetCloseHandle(hInternetConnect);
-	InternetCloseHandle(hConnect);
-	*/
-	system("pause");
 	return 0;
 }
