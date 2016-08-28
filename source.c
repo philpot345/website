@@ -1,3 +1,5 @@
+#define COUNT 11264
+
 #pragma comment(lib,"wininet.lib") //remove if not using VC++.
 #include <stdio.h>
 #include <windows.h>
@@ -7,15 +9,16 @@ int uClose_Internet_Connections(HINTERNET, HINTERNET, HINTERNET);
 int uConnect_to_Internet(HINTERNET, LPCWSTR, DWORD, DWORD);
 int uConnect_to_Server(HINTERNET, HINTERNET, LPCWSTR, DWORD, DWORD);
 int uConnect_to_URL(HINTERNET, HINTERNET, HINTERNET, LPCWSTR, DWORD);
-int uRead_Data_from_Website(HINTERNET, char[4096], int, DWORD);
+int uPreform_Checks();
+int uRead_Data_from_Website(HINTERNET, char[COUNT], int, DWORD);
 
 int main() {
 
 	//	Setup all Variables to be used
 
-	char DataReceived[4096];
+	char DataReceived[COUNT];
 
-	int DataSize = 4096;
+	int DataSize = COUNT;
 
 	DWORD dwAddressRequestFlags = INTERNET_FLAG_KEEP_CONNECTION;// | INTERNET_FLAG_PRAGMA_NOCACHE;
 	DWORD dwConnectionAccessRequest = INTERNET_OPEN_TYPE_PRECONFIG;
@@ -40,6 +43,10 @@ int main() {
 
 	//	Perform the actions
 	uRead_Data_from_Website(hOpenAddress, DataReceived, DataSize, dwNumberofBytesRead);
+
+	//	Perform the checks
+
+	uPreform_Checks();
 
 	//	Close all internet connections
 	uClose_Internet_Connections(hConnect, hInternetConnect, hOpenAddress);
@@ -115,11 +122,70 @@ int uConnect_to_URL(hConnect, hInternetConnect, hOpenAddress, website_address, d
 	return hOpenAddress;
 }
 
-int uRead_Data_from_Website(hOpenAddress, DataReceived, DataSize, dwNumberofBytesRead)
+int uPreform_Checks()
 {
-	while (InternetReadFile(hOpenAddress, DataReceived, 4096, &dwNumberofBytesRead) && dwNumberofBytesRead)
+	char read[10];
+	char* file_name = "test.txt";
+	char* mode = "r+";
+	int base_count = 0, check_success = 0, pass = 0;
+	errno_t err;
+	FILE *fp;
+
+	err = fopen_s(&fp, file_name, mode);
+
+	if (!fp)
 	{
-		printf(DataReceived);
+		puts("Failed to open file.");
+		printf("Error:\t0x%x\n", GetLastError());
 	}
+
+	else
+	{
+		while (check_success != 1 && (read[base_count] = fgetc(fp)) != EOF)
+		{
+			if (pass > 1 && read[base_count] == "P" && read[base_count+1] == "A")
+				check_success = 1;
+			base_count++;
+			pass++;
+		}
+		fclose(fp);
+
+		if (check_success)
+			puts("Success!");
+		else
+			puts("Failed!");
+
+	}
+
+	return 0;
+}
+
+int uRead_Data_from_Website(HINTERNET hOpenAddress, char DataReceived[COUNT], int DataSize, DWORD dwNumberofBytesRead)
+{
+	char* file_name = "test.txt";
+	char* mode = "w+";
+	int base_count = 0;
+	errno_t err;
+	FILE *fp;
+	err = fopen_s(&fp, file_name, mode);
+
+	if (!fp)
+	{
+		puts("Failed to open file.");
+		printf("Error:\t0x%x\n", GetLastError());
+	}
+
+	else
+	{
+		while (InternetReadFile(hOpenAddress, DataReceived, DataSize, &dwNumberofBytesRead) && dwNumberofBytesRead)
+			while (base_count < dwNumberofBytesRead)
+			{
+				fputc(DataReceived[base_count], fp);
+				base_count++;
+			}
+
+		fclose(fp);
+	}
+
 	return 0;
 }
